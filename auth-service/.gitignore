@@ -34,3 +34,5 @@ build/
 
 ### Firebase Credentials ###
 firebase-service-account.json
+
+.env
