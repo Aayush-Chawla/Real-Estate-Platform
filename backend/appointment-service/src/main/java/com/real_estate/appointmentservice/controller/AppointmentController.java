@@ -32,12 +32,12 @@ public class AppointmentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AppointmentResponse> getById(@PathVariable ObjectId id) {
+    public ResponseEntity<AppointmentResponse> getById(@PathVariable String id) {
         return ResponseEntity.ok(service.getAppointmentById(id));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AppointmentResponse> update(@PathVariable ObjectId  id,
+    public ResponseEntity<AppointmentResponse> update(@PathVariable String  id,
                                                       @Valid @RequestBody AppointmentRequest request) {
         return ResponseEntity.ok(service.updateAppointment(id, request));
     }
@@ -45,7 +45,7 @@ public class AppointmentController {
     // soft delete
     // appointment.status -> "CANCELLED"
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable ObjectId  id) {
+    public ResponseEntity<Void> delete(@PathVariable String  id) {
         service.deleteAppointment(id);
         return ResponseEntity.noContent().build();
     }

@@ -29,21 +29,21 @@ import java.io.IOException;
 @RequiredArgsConstructor
 @Slf4j
 public class SecurityConfig {
-    
+
     private final FirebaseAuth firebaseAuth;
-    
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/auth/register", "/auth/login").permitAll()
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(new FirebaseAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-        
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authz -> authz
+                        .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(new FirebaseAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+
         log.info("Security configuration applied with Firebase authentication and CORS");
         return http.build();
     }
@@ -62,23 +62,28 @@ public class SecurityConfig {
         return source;
     }
 
-    
     private class FirebaseAuthenticationFilter extends OncePerRequestFilter {
-        
+
         @Override
-        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
-                                      FilterChain filterChain) throws ServletException, IOException {
-            
+        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                        FilterChain filterChain) throws ServletException, IOException {
+
             String path = request.getRequestURI();
-            
-            // Skip authentication for public endpoints
-            if (path.equals("/auth/register") || path.equals("/auth/login")) {
+
+            // Allow CORS preflight through unconditionally
+            if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
                 filterChain.doFilter(request, response);
                 return;
             }
-            
+
+            // Skip authentication for public endpoints
+            if (path.equals("/api/auth/register") || path.equals("/api/auth/login")) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             String authorization = request.getHeader("Authorization");
-            
+
             if (authorization == null || !authorization.startsWith("Bearer ")) {
                 log.warn("Missing or invalid authorization header for path: {}", path);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -86,19 +91,19 @@ public class SecurityConfig {
                 response.getWriter().write("{\"error\":\"Missing or invalid authorization header\"}");
                 return;
             }
-            
+
             String idToken = authorization.substring(7);
-            
+
             try {
                 FirebaseToken decodedToken = firebaseAuth.verifyIdToken(idToken);
-                
+
                 // Create a simple authentication object
                 FirebaseAuthenticationToken authentication = new FirebaseAuthenticationToken(decodedToken);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                
+
                 log.debug("Firebase authentication successful for UID: {}", decodedToken.getUid());
                 filterChain.doFilter(request, response);
-                
+
             } catch (FirebaseAuthException e) {
                 log.error("Firebase authentication failed: {}", e.getMessage());
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -107,21 +112,21 @@ public class SecurityConfig {
             }
         }
     }
-    
+
     private static class FirebaseAuthenticationToken extends org.springframework.security.authentication.AbstractAuthenticationToken {
         private final FirebaseToken firebaseToken;
-        
+
         public FirebaseAuthenticationToken(FirebaseToken firebaseToken) {
             super(null);
             this.firebaseToken = firebaseToken;
             setAuthenticated(true);
         }
-        
+
         @Override
         public Object getCredentials() {
             return firebaseToken;
         }
-        
+
         @Override
         public Object getPrincipal() {
             return firebaseToken.getUid();

@@ -3,7 +3,7 @@ import axios from "axios";
 
 // Create an Axios instance for all API requests
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || "http://localhost:8081",
+  baseURL: process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || "http://localhost:8081/api",
 });
 
 // 🧩 Common Type Definitions

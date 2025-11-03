@@ -10,7 +10,7 @@ import java.util.UUID;
 public interface AppointmentService {
     AppointmentResponse createAppointment(AppointmentRequest request);
     List<AppointmentResponse> getAllAppointments();
-    AppointmentResponse getAppointmentById(ObjectId id);
-    AppointmentResponse updateAppointment(ObjectId  id, AppointmentRequest request);
-    void deleteAppointment(ObjectId  id);
+    AppointmentResponse getAppointmentById(String id);
+    AppointmentResponse updateAppointment(String id, AppointmentRequest request);
+    void deleteAppointment(String id);
 }

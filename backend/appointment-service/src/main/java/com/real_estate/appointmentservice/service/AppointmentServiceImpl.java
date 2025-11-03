@@ -55,15 +55,17 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
-    public AppointmentResponse getAppointmentById(ObjectId id) {
-        return repository.findById(id)
+    public AppointmentResponse getAppointmentById(String id) {
+        ObjectId objectId = new ObjectId(id);
+        return repository.findById(objectId)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
     }
 
     @Override
-    public AppointmentResponse updateAppointment(ObjectId id, AppointmentRequest request) {
-        Appointment entity = repository.findById(id)
+    public AppointmentResponse updateAppointment(String id, AppointmentRequest request) {
+        ObjectId objectId = new ObjectId(id);
+        Appointment entity = repository.findById(objectId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
 
         entity.setScheduledAt(request.getScheduledAt());
@@ -74,8 +76,9 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
-    public void deleteAppointment(ObjectId id) {
-        Appointment entity = repository.findById(id)
+    public void deleteAppointment(String id) {
+        ObjectId objectId = new ObjectId(id);
+        Appointment entity = repository.findById(objectId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
 
         entity.setStatus(Appointment.Status.CANCELLED);
