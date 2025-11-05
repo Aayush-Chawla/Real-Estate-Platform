@@ -1,0 +1,122 @@
+version: '3.9'
+
+services:
+  # ------------------- EUREKA SERVER -------------------
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - backend
+    environment:
+      - JAVA_OPTS=-Xmx512m
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
+
+  # ------------------- API GATEWAY -------------------
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "9090:9090"
+    depends_on:
+      - eureka-server
+    networks:
+      - backend
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_APPLICATION_NAME=api-gateway
+      - SERVER_PORT=9090
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
+    command: ["./wait-for-it.sh", "eureka-server:8761", "--", "java", "-jar", "api-gateway.jar"]
+
+  # ------------------- AUTH SERVICE -------------------
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    depends_on:
+      - eureka-server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://eureka-server:8761/"]
+      interval: 30s
+      retries: 3
+    ports:
+      - "8081:8081"
+    networks:
+      - backend
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_APPLICATION_NAME=auth-service
+      - SERVER_PORT=8081
+      - JAVA_OPTS=-Xmx512m
+    restart: always
+
+  # ------------------- APPOINTMENT SERVICE -------------------
+  appointment-service:
+    build:
+      context: ./appointment-service
+      dockerfile: Dockerfile
+    container_name: appointment-service
+    depends_on:
+      - eureka-server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://eureka-server:8761/"]
+      interval: 30s
+      retries: 3
+    ports:
+      - "8082:8082"
+    networks:
+      - backend
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_APPLICATION_NAME=appointment-service
+      - SERVER_PORT=8082
+      - JAVA_OPTS=-Xmx512m
+    restart: always
+
+  # ------------------- PROPERTY SERVICE -------------------
+  property-service:
+    build:
+      context: ./property-service
+      dockerfile: Dockerfile
+    container_name: property-service
+    depends_on:
+      - eureka-server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://eureka-server:8761/"]
+      interval: 30s
+      retries: 3
+    ports:
+      - "8083:8083"
+    networks:
+      - backend
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_APPLICATION_NAME=property-service
+      - SERVER_PORT=8083
+      - JAVA_OPTS=-Xmx512m
+    restart: always
+
+networks:
+  backend:
+    driver: bridge
